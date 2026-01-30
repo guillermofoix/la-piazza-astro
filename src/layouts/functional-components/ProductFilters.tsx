@@ -21,11 +21,18 @@ const ProductFilters = ({
   categoriesWithCounts: { category: string; productCount: number }[];
 }) => {
   const [searchParams, setSearchParams] = useState(
-    new URLSearchParams(window.location.search)
+    new URLSearchParams(
+      typeof window !== "undefined" ? window.location.search : "",
+    ),
   );
 
   const selectedBrands = searchParams.getAll("b");
   const selectedCategory = searchParams.get("c");
+  const hasFilters = searchParams.toString().length > 0;
+
+  const clearFilters = () => {
+    window.location.href = window.location.pathname;
+  };
 
   const updateSearchParams = (newParams: URLSearchParams) => {
     const newUrl = `${window.location.pathname}?${newParams.toString()}`;
@@ -36,11 +43,13 @@ const ProductFilters = ({
   const handleBrandClick = (name: string) => {
     const slugName = slugify(name.toLowerCase());
     const newParams = new URLSearchParams(searchParams.toString());
-
     const currentBrands = newParams.getAll("b");
 
     if (currentBrands.includes(slugName)) {
-      newParams.delete("b", slugName);
+      newParams.delete("b");
+      currentBrands
+        .filter((b) => b !== slugName)
+        .forEach((b) => newParams.append("b", b));
     } else {
       newParams.append("b", slugName);
     }
@@ -49,7 +58,6 @@ const ProductFilters = ({
 
   const handleCategoryClick = (handle: string) => {
     const newParams = new URLSearchParams(searchParams.toString());
-
     if (handle === selectedCategory) {
       newParams.delete("c");
     } else {
@@ -59,7 +67,28 @@ const ProductFilters = ({
   };
 
   return (
-    <div>
+    <div className="space-y-6">
+      {hasFilters && (
+        <button
+          onClick={clearFilters}
+          className="w-full py-2 mb-4 text-sm font-medium text-red-600 border border-red-200 rounded-lg hover:bg-red-50 transition-colors flex items-center justify-center gap-2"
+        >
+          <svg
+            className="w-4 h-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M6 18L18 6M6 6l12 12"
+            />
+          </svg>
+          Limpiar Filtros
+        </button>
+      )}
       <div>
         <h5 className="mb-2 lg:text-xl">Select Price Range</h5>
         <hr className="border-border dark:border-darkmode-border" />
@@ -75,10 +104,11 @@ const ProductFilters = ({
           {categories.map((category) => (
             <li
               key={category.handle}
-              className={`flex items-center justify-between cursor-pointer ${selectedCategory === category.handle
-                ? "text-text-dark dark:text-darkmode-text-dark font-semibold"
-                : "text-text-light dark:text-darkmode-text-light"
-                }`}
+              className={`flex items-center justify-between cursor-pointer ${
+                selectedCategory === category.handle
+                  ? "text-text-dark dark:text-darkmode-text-dark font-semibold"
+                  : "text-text-light dark:text-darkmode-text-light"
+              }`}
               onClick={() => handleCategoryClick(category.handle)}
             >
               {category.title}
@@ -87,10 +117,11 @@ const ProductFilters = ({
               ) : (
                 <span>
                   {categoriesWithCounts.length > 0
-                    ? `(${categoriesWithCounts.find(
-                      (c) => c.category === category.title
-                    )?.productCount || 0
-                    })`
+                    ? `(${
+                        categoriesWithCounts.find(
+                          (c) => c.category === category.title,
+                        )?.productCount || 0
+                      })`
                     : `(${category?.products?.edges.length || 0})`}
                 </span>
               )}
@@ -111,28 +142,29 @@ const ProductFilters = ({
                 onClick={() => handleBrandClick(vendor.vendor)}
               >
                 {searchParams.has("b") &&
-                  !searchParams.has("c") &&
-                  !searchParams.has("minPrice") &&
-                  !searchParams.has("maxPrice") &&
-                  !searchParams.has("q") &&
-                  !searchParams.has("t") ? (
+                !searchParams.has("c") &&
+                !searchParams.has("minPrice") &&
+                !searchParams.has("maxPrice") &&
+                !searchParams.has("q") &&
+                !searchParams.has("t") ? (
                   <span>
                     {vendor.vendor} ({vendor.productCount})
                   </span>
                 ) : (
                   <span>
                     {vendorsWithCounts.length > 0
-                      ? `${vendor.vendor} (${vendorsWithCounts.find(
-                        (v) => v.vendor === vendor.vendor
-                      )?.productCount || 0
-                      })`
+                      ? `${vendor.vendor} (${
+                          vendorsWithCounts.find(
+                            (v) => v.vendor === vendor.vendor,
+                          )?.productCount || 0
+                        })`
                       : `${vendor.vendor} (${vendor.productCount})`}
                   </span>
                 )}
                 <div className="h-4 w-4 rounded-sm flex items-center justify-center border border-border dark:border-border/40">
-                  {selectedBrands.includes(slugify(vendor.vendor.toLowerCase())) && (
-                    <BsCheckLg size={16} />
-                  )}
+                  {selectedBrands.includes(
+                    slugify(vendor.vendor.toLowerCase()),
+                  ) && <BsCheckLg size={16} />}
                 </div>
               </li>
             ))}

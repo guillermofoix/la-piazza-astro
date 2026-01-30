@@ -157,9 +157,20 @@ if (!isServer) {
 
 function syncCart() {
   const subtotal = localCart.lines.reduce((acc, l) => acc + (parseFloat(l.cost.totalAmount.amount)), 0);
-  localCart.cost.subtotalAmount.amount = subtotal.toFixed(2);
-  localCart.cost.totalAmount.amount = subtotal.toFixed(2);
-  localCart.totalQuantity = localCart.lines.reduce((acc, l) => acc + l.quantity, 0);
+  const totalQuantity = localCart.lines.reduce((acc, l) => acc + l.quantity, 0);
+
+  // Create a fresh object for the cart to ensure reactivity
+  localCart = {
+    ...localCart,
+    lines: [...localCart.lines],
+    cost: {
+      ...localCart.cost,
+      subtotalAmount: { amount: subtotal.toFixed(2), currencyCode: 'EUR' },
+      totalAmount: { amount: subtotal.toFixed(2), currencyCode: 'EUR' }
+    },
+    totalQuantity
+  };
+
   if (!isServer) {
     try { localStorage.setItem(CART_KEY, JSON.stringify(localCart)); } catch (e) {}
   }
@@ -169,11 +180,12 @@ function syncCart() {
 // HELPER: SHARED FILTER LOGIC
 // ==========================================
 
-function applyFilters(products: Product[], query: any): Product[] {
+function applyFilters(products: Product[], queryObj: any): Product[] {
   let filtered = [...products];
-  const qStr = typeof query === 'string' ? query : (query?.query || "");
+  const query = typeof queryObj === 'string' ? { query: queryObj } : queryObj;
+  const qStr = query?.query || "";
   
-  // 1. Try to parse from URL-like string if query fails
+  // 1. Parse filters from query string
   const params = new URLSearchParams(qStr.includes('=') ? qStr : "");
   const min = params.get('minPrice') || qStr.match(/variants\.price:>=(\d+)/)?.[1];
   const max = params.get('maxPrice') || qStr.match(/variants\.price:<=(\d+)/)?.[1];
@@ -189,8 +201,28 @@ function applyFilters(products: Product[], query: any): Product[] {
     filtered = filtered.filter(p => 
       p.title.toLowerCase().includes(term) || 
       p.description.toLowerCase().includes(term) ||
-      (p as any).category.toLowerCase().includes(term)
+      (p as any).category?.toLowerCase().includes(term)
     );
+  }
+
+  // 4. Apply Sorting
+  const sortKey = query?.sortKey;
+  const reverse = query?.reverse === true || query?.reverse === 'true';
+
+  if (sortKey === 'PRICE') {
+    filtered.sort((a, b) => {
+      const priceA = parseFloat(a.priceRange.minVariantPrice.amount);
+      const priceB = parseFloat(b.priceRange.minVariantPrice.amount);
+      return reverse ? priceB - priceA : priceA - priceB;
+    });
+  } else if (sortKey === 'TITLE') {
+    filtered.sort((a, b) => {
+      return reverse ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title);
+    });
+  } else if (sortKey === 'CREATED_AT') {
+     filtered.sort((a, b) => {
+      return reverse ? new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime() : new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
+    });
   }
 
   return filtered;
@@ -226,6 +258,7 @@ export async function addToCart(id: string, lines: any[]): Promise<Cart> {
 }
 
 export async function removeFromCart(id: string, ids: string[]) {
+  // Use filter to create a new array
   localCart.lines = localCart.lines.filter(l => !ids.includes(l.id));
   syncCart();
   return { ...localCart };
@@ -265,8 +298,15 @@ export async function getCollectionProducts(args: any) {
     products = products.filter(p => (p as any).category.toLowerCase() === collection.toLowerCase());
   }
 
-  // Apply price/text filters even inside collections
-  products = applyFilters(products, args?.query || "");
+  // Create combined query object for applyFilters
+  const queryObj = {
+    query: args?.query?.query || args?.query || "",
+    sortKey: args?.sortKey,
+    reverse: args?.reverse
+  };
+
+  // Apply filters and sorting
+  products = applyFilters(products, queryObj);
 
   if (collection === 'hidden-homepage-carousel') products = MOCK_PRODUCTS.slice(0, 3);
   if (collection === 'featured-products') products = MOCK_PRODUCTS.slice(3, 8);

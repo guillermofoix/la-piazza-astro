@@ -22,31 +22,25 @@ export async function addItem(selectedVariantId: string | undefined) {
   }
 
   if (!selectedVariantId) {
-    return "Missing product variant ID";
+    throw new Error("Missing product variant ID");
   }
 
   try {
     await addToCart(cartId, [
       { merchandiseId: selectedVariantId, quantity: 1 },
     ]);
-    // return (window.location.href = "/");
   } catch (e) {
-    return "Error adding item to cart";
+    throw new Error("Error adding item to cart");
   }
 }
 
 export async function removeItem(lineId: string) {
-  const cartId = Cookies.get("cartId");
-
-  if (!cartId) {
-    return "Missing cart ID";
-  }
+  const cartId = Cookies.get("cartId") || "mock-cart-id";
 
   try {
     await removeFromCart(cartId, [lineId]);
-    // return (window.location.href = "/");
   } catch (e) {
-    return "Error removing item from cart";
+    throw new Error("Error removing item from cart");
   }
 }
 
@@ -55,29 +49,23 @@ export async function updateItemQuantity(payload: {
   variantId: string;
   quantity: number;
 }) {
-  const cartId = Cookies.get("cartId");
-
-  if (!cartId) {
-    return "Missing cart ID";
-  }
+  const cartId = Cookies.get("cartId") || "mock-cart-id";
 
   const { lineId, variantId, quantity } = payload;
 
   try {
     if (quantity === 0) {
       await removeFromCart(cartId, [lineId]);
-      // return (window.location.href = "/");
+    } else {
+      await updateCart(cartId, [
+        {
+          id: lineId,
+          merchandiseId: variantId,
+          quantity,
+        },
+      ]);
     }
-
-    await updateCart(cartId, [
-      {
-        id: lineId,
-        merchandiseId: variantId,
-        quantity,
-      },
-    ]);
-    // return (window.location.href = "/");
   } catch (e) {
-    return "Error updating item quantity";
+    throw new Error("Error updating item quantity");
   }
 }
