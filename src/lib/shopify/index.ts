@@ -185,33 +185,54 @@ function applyFilters(products: Product[], queryObj: any): Product[] {
   const query = typeof queryObj === 'string' ? { query: queryObj } : queryObj;
   const qStr = query?.query || "";
   
-  // 1. Parse filters from URL params OR Shopify query string
+  // 1. Extract values from query string (both URL params and Shopify format)
   const params = new URLSearchParams(qStr.includes('=') ? qStr : "");
   
-  // Try to get price from params or regex
-  const min = params.get('minPrice') || qStr.match(/variants\.price:>=(\d+)/)?.[1];
-  const max = params.get('maxPrice') || qStr.match(/variants\.price:<=(\d+)/)?.[1];
+  // --- PRICE FILTER ---
+  const min = params.get('minPrice') || qStr.match(/variants\.price:>=([\d.]+)/)?.[1];
+  const max = params.get('maxPrice') || qStr.match(/variants\.price:<=([\d.]+)/)?.[1];
   
-  // Clean the text query by removing shopify syntax
-  let text = params.get('q') || qStr;
+  if (min && !isNaN(parseFloat(min))) {
+    filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
+  }
+  if (max && !isNaN(parseFloat(max))) {
+    filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
+  }
+
+  // --- VENDOR (BRAND) FILTER ---
+  const vendorMatch = qStr.match(/vendor:"([^"]+)"/) || qStr.match(/vendor:([^ ]+)/);
+  const vendor = params.get('b') || (vendorMatch ? vendorMatch[1] : null);
   
-  // If it's a shopify query (contains :), extract only the parts that look like text search
-  if (!qStr.includes('=') && qStr.includes(':')) {
-    // Extract simple text search from q:"..."
+  if (vendor) {
+    const vTerm = vendor.toLowerCase();
+    filtered = filtered.filter(p => p.vendor.toLowerCase() === vTerm || (p as any).vendor.toLowerCase().includes(vTerm));
+  }
+
+  // --- TAG FILTER ---
+  const tag = params.get('t') || qStr.match(/tag:([^ ]+)/)?.[1];
+  if (tag) {
+    const tTerm = tag.toLowerCase();
+    filtered = filtered.filter(p => p.tags.some(t => t.toLowerCase() === tTerm));
+  }
+
+  // --- TEXT SEARCH ---
+  // If it has q="...", use that. Otherwise use the whole string MINUS the specialized filters.
+  let text = params.get('q');
+  if (!text) {
     const qMatch = qStr.match(/q:"([^"]+)"/);
-    text = qMatch ? qMatch[1] : "";
-    
-    // If no q:"...", but it has other filters, we don't want the whole string as search text
-    if (!qMatch && (qStr.includes('vendor:') || qStr.includes('variants.price:'))) {
-      text = ""; 
+    if (qMatch) {
+      text = qMatch[1];
+    } else {
+      // If it's a non-param string, remove the shopify tokens to get the raw search text
+      text = qStr
+        .replace(/variants\.price:[<>]=\d+(\.\d+)?/g, "")
+        .replace(/vendor:"[^"]+"/g, "")
+        .replace(/vendor:[^ ]+/g, "")
+        .replace(/tag:[^ ]+/g, "")
+        .trim();
     }
   }
 
-  // 2. Filter by price
-  if (min) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
-  if (max) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
-
-  // 3. Filter by text (if there's a real search term)
   if (text && text.trim().length > 0) {
     const term = text.toLowerCase().trim();
     filtered = filtered.filter(p => 
