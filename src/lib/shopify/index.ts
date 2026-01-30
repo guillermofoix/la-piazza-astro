@@ -183,66 +183,42 @@ function syncCart() {
 function applyFilters(products: Product[], queryObj: any): Product[] {
   let filtered = [...products];
   const query = typeof queryObj === 'string' ? { query: queryObj } : queryObj;
-  const qStr = query?.query || "";
+  const qStr = (query?.query || "").trim();
   
-  // 1. Extract values from query string (both URL params and Shopify format)
-  const params = new URLSearchParams(qStr.includes('=') ? qStr : "");
-  
-  // --- PRICE FILTER ---
-  const min = params.get('minPrice') || qStr.match(/variants\.price:>=([\d.]+)/)?.[1];
-  const max = params.get('maxPrice') || qStr.match(/variants\.price:<=([\d.]+)/)?.[1];
-  
-  if (min && !isNaN(parseFloat(min))) {
-    filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
-  }
-  if (max && !isNaN(parseFloat(max))) {
-    filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
-  }
+  if (!qStr) return filtered;
 
-  // --- VENDOR (BRAND) FILTER ---
+  // 1. PRICE
+  const min = qStr.match(/variants\.price:>=([\d.]+)/)?.[1];
+  const max = qStr.match(/variants\.price:<=([\d.]+)/)?.[1];
+  if (min) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
+  if (max) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
+
+  // 2. VENDOR
   const vendorMatch = qStr.match(/vendor:"([^"]+)"/) || qStr.match(/vendor:([^ ]+)/);
-  const vendor = params.get('b') || (vendorMatch ? vendorMatch[1] : null);
+  if (vendorMatch) {
+    const vTerm = vendorMatch[1].toLowerCase();
+    filtered = filtered.filter(p => p.vendor.toLowerCase().includes(vTerm) || (p as any).vendor?.toLowerCase().includes(vTerm));
+  }
+
+  // 3. TEXT SEARCH (only if NOT a system filter)
+  const isSystemQuery = qStr.includes('vendor:') || qStr.includes('variants.price:') || qStr.includes('tag:');
+  let cleanText = qStr;
   
-  if (vendor) {
-    const vTerm = vendor.toLowerCase();
-    filtered = filtered.filter(p => p.vendor.toLowerCase() === vTerm || (p as any).vendor.toLowerCase().includes(vTerm));
-  }
-
-  // --- TAG FILTER ---
-  const tag = params.get('t') || qStr.match(/tag:([^ ]+)/)?.[1];
-  if (tag) {
-    const tTerm = tag.toLowerCase();
-    filtered = filtered.filter(p => p.tags.some(t => t.toLowerCase() === tTerm));
-  }
-
-  // --- TEXT SEARCH ---
-  // If it has q="...", use that. Otherwise use the whole string MINUS the specialized filters.
-  let text = params.get('q');
-  if (!text) {
+  if (isSystemQuery) {
+    // Extract q:"..." if present, otherwise ignore system parts
     const qMatch = qStr.match(/q:"([^"]+)"/);
-    if (qMatch) {
-      text = qMatch[1];
-    } else {
-      // If it's a non-param string, remove the shopify tokens to get the raw search text
-      text = qStr
-        .replace(/variants\.price:[<>]=\d+(\.\d+)?/g, "")
-        .replace(/vendor:"[^"]+"/g, "")
-        .replace(/vendor:[^ ]+/g, "")
-        .replace(/tag:[^ ]+/g, "")
-        .trim();
-    }
+    cleanText = qMatch ? qMatch[1] : qStr.split(' ').filter(word => !word.includes(':')).join(' ');
   }
 
-  if (text && text.trim().length > 0) {
-    const term = text.toLowerCase().trim();
+  const term = cleanText.trim().toLowerCase();
+  if (term && term.length > 0) {
     filtered = filtered.filter(p => 
       p.title.toLowerCase().includes(term) || 
-      p.description.toLowerCase().includes(term) ||
-      (p as any).category?.toLowerCase().includes(term)
+      p.description.toLowerCase().includes(term)
     );
   }
 
-  // 4. Apply Sorting
+  // 4. SORTING
   const sortKey = query?.sortKey;
   const reverse = query?.reverse === true || query?.reverse === 'true';
 
@@ -255,10 +231,6 @@ function applyFilters(products: Product[], queryObj: any): Product[] {
   } else if (sortKey === 'TITLE') {
     filtered.sort((a, b) => {
       return reverse ? b.title.localeCompare(a.title) : a.title.localeCompare(b.title);
-    });
-  } else if (sortKey === 'CREATED_AT') {
-     filtered.sort((a, b) => {
-      return reverse ? new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime() : new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
     });
   }
 

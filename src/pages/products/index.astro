@@ -36,8 +36,11 @@ let categoriesWithCounts: { category: string; productCount: number }[] = [];
 if (searchValue || brand || minPrice || maxPrice || category || tag) {
   let queryString = "";
 
-  if (minPrice || maxPrice) {
-    queryString += `variants.price:<=${maxPrice} variants.price:>=${minPrice}`;
+  if (minPrice) {
+    queryString += ` variants.price:>=${minPrice}`;
+  }
+  if (maxPrice) {
+    queryString += ` variants.price:<=${maxPrice}`;
   }
 
   if (searchValue) {
