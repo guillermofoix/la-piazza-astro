@@ -185,19 +185,35 @@ function applyFilters(products: Product[], queryObj: any): Product[] {
   const query = typeof queryObj === 'string' ? { query: queryObj } : queryObj;
   const qStr = query?.query || "";
   
-  // 1. Parse filters from query string
+  // 1. Parse filters from URL params OR Shopify query string
   const params = new URLSearchParams(qStr.includes('=') ? qStr : "");
+  
+  // Try to get price from params or regex
   const min = params.get('minPrice') || qStr.match(/variants\.price:>=(\d+)/)?.[1];
   const max = params.get('maxPrice') || qStr.match(/variants\.price:<=(\d+)/)?.[1];
-  const text = params.get('q') || qStr.replace(/variants\.price:[<>]=\d+/g, "").trim();
+  
+  // Clean the text query by removing shopify syntax
+  let text = params.get('q') || qStr;
+  
+  // If it's a shopify query (contains :), extract only the parts that look like text search
+  if (!qStr.includes('=') && qStr.includes(':')) {
+    // Extract simple text search from q:"..."
+    const qMatch = qStr.match(/q:"([^"]+)"/);
+    text = qMatch ? qMatch[1] : "";
+    
+    // If no q:"...", but it has other filters, we don't want the whole string as search text
+    if (!qMatch && (qStr.includes('vendor:') || qStr.includes('variants.price:'))) {
+      text = ""; 
+    }
+  }
 
   // 2. Filter by price
   if (min) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
   if (max) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
 
-  // 3. Filter by text
-  if (text && text.length > 0 && !text.includes('variants.price')) {
-    const term = text.toLowerCase();
+  // 3. Filter by text (if there's a real search term)
+  if (text && text.trim().length > 0) {
+    const term = text.toLowerCase().trim();
     filtered = filtered.filter(p => 
       p.title.toLowerCase().includes(term) || 
       p.description.toLowerCase().includes(term) ||
