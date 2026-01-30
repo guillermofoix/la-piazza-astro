@@ -1,16 +1,16 @@
 import config from "@/config/config.json";
 import { defaultSort, sorting } from "@/lib/constants";
-import type { PageInfo, Product } from '@/lib/shopify/types';
-import React, { useEffect, useRef, useState } from 'react';
+import type { PageInfo, Product } from "@/lib/shopify/types";
+import React, { useEffect, useRef, useState } from "react";
 import { BiLoaderAlt } from "react-icons/bi";
-import { AddToCart } from './cart/AddToCart';
+import { AddToCart } from "./cart/AddToCart";
 
 const ProductList = ({
   initialProducts,
   initialPageInfo,
   sortKey,
   reverse,
-  searchValue
+  searchValue,
 }: {
   initialProducts: Product[];
   initialPageInfo: PageInfo;
@@ -28,7 +28,8 @@ const ProductList = ({
   const loaderRef = useRef(null);
 
   const getSortParams = (sortKey: string) => {
-    const sortOption = sorting.find((item) => item.slug === sortKey) || defaultSort;
+    const sortOption =
+      sorting.find((item) => item.slug === sortKey) || defaultSort;
     return { sortKey: sortOption.sortKey, reverse: sortOption.reverse };
   };
 
@@ -38,16 +39,17 @@ const ProductList = ({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/products.json?cursor=${pageInfo.endCursor || ''}&sortKey=${currentSortKey}&reverse=${currentReverse}`
+        `/api/products.json?cursor=${pageInfo.endCursor || ""}&sortKey=${currentSortKey}&reverse=${currentReverse}`,
       );
-      if (!response.ok) throw new Error('Failed to fetch');
-      const { products: newProducts, pageInfo: newPageInfo } = await response.json();
+      if (!response.ok) throw new Error("Failed to fetch");
+      const { products: newProducts, pageInfo: newPageInfo } =
+        await response.json();
 
       setProducts((prevProducts) => [...prevProducts, ...newProducts]);
       setPageInfo(newPageInfo);
       setSortChanged(false);
     } catch (error) {
-      console.error('Error loading more products:', error);
+      console.error("Error loading more products:", error);
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,8 @@ const ProductList = ({
     const params = new URLSearchParams(window.location.search);
     const newSortKey = params.get("sortKey") || sortKey;
 
-    const { sortKey: mappedSortKey, reverse: mappedReverse } = getSortParams(newSortKey);
+    const { sortKey: mappedSortKey, reverse: mappedReverse } =
+      getSortParams(newSortKey);
 
     // Update only if URL params differ from current state
     if (mappedSortKey !== currentSortKey || mappedReverse !== currentReverse) {
@@ -91,7 +94,7 @@ const ProductList = ({
             loadMoreProducts();
           }
         },
-        { threshold: 1.0 }
+        { threshold: 1.0 },
       );
 
       if (loaderRef.current) {
@@ -115,7 +118,9 @@ const ProductList = ({
           {products.length === 0
             ? "There are no products that match "
             : `Showing ${products.length} ${resultsText} for `}
-          <span className="font-bold text-dark dark:text-darkmode-text-dark">&quot;{searchValue}&quot;</span>
+          <span className="font-bold text-dark dark:text-darkmode-text-dark">
+            &quot;{searchValue}&quot;
+          </span>
         </p>
       ) : null}
 
@@ -152,11 +157,13 @@ const ProductList = ({
             variants.length > 0 ? variants[0].id : undefined;
 
           return (
-            <div className="col-12" key={id}>
-              <div className="row">
+            <div className="col-12 group" key={id}>
+              <div className="row p-6 rounded-2xl transition-all duration-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:shadow-xl hover:-translate-y-1">
                 <div className="col-4">
                   <img
-                    src={featuredImage?.url || "/images/product-placeholder.jpg"}
+                    src={
+                      featuredImage?.url || "/images/product-placeholder.jpg"
+                    }
                     // fallback={'/images/category-1.png'}
                     width={312}
                     height={269}
@@ -172,16 +179,14 @@ const ProductList = ({
 
                   <div className="flex items-center gap-x-2 mt-2">
                     <span className="text-text-light dark:text-darkmode-text-light text-xs md:text-lg font-bold">
-                      ৳ {priceRange?.minVariantPrice?.amount}{" "}
-                      {priceRange?.minVariantPrice?.currencyCode}
+                      {currencySymbol}
+                      {priceRange?.minVariantPrice?.amount}
                     </span>
-                    {parseFloat(
-                      compareAtPriceRange?.maxVariantPrice?.amount,
-                    ) > 0 ? (
+                    {parseFloat(compareAtPriceRange?.maxVariantPrice?.amount) >
+                    0 ? (
                       <s className="text-text-light dark:text-darkmode-text-light text-xs md:text-base font-medium">
-                        {currencySymbol}{" "}
-                        {compareAtPriceRange?.maxVariantPrice?.amount}{" "}
-                        {compareAtPriceRange?.maxVariantPrice?.currencyCode}
+                        {currencySymbol}
+                        {compareAtPriceRange?.maxVariantPrice?.amount}
                       </s>
                     ) : (
                       ""
@@ -209,7 +214,11 @@ const ProductList = ({
 
       {pageInfo?.hasNextPage && (
         <div ref={loaderRef} className="text-center pt-10 pb-4 w-full">
-          {loading ? <BiLoaderAlt className={`animate-spin mx-auto`} size={30} /> : 'Scroll for more'}
+          {loading ? (
+            <BiLoaderAlt className={`animate-spin mx-auto`} size={30} />
+          ) : (
+            "Scroll for more"
+          )}
         </div>
       )}
     </div>

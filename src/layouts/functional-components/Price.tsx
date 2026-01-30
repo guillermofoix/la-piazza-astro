@@ -10,25 +10,17 @@ interface PriceProps {
 const Price: React.FC<PriceProps> = ({
   amount,
   className = "",
-  currencyCode = "USD",
+  currencyCode = "EUR",
   currencyCodeClassName = "",
 }) => {
-  const formattedAmount = new Intl.NumberFormat(undefined, {
+  // We force the Euro symbol as requested and standard European format
+  const formattedAmount = new Intl.NumberFormat("es-ES", {
     style: "currency",
-    currency: currencyCode,
-    currencyDisplay: "narrowSymbol",
+    currency: "EUR",
+    currencyDisplay: "symbol",
   }).format(parseFloat(amount));
 
-  const combinedClassName = `${className} ${
-    currencyCodeClassName ? "ml-1 inline" : ""
-  }`.trim();
-
-  return (
-    <p className={className}>
-      {formattedAmount}
-      <span className={combinedClassName}>{currencyCode}</span>
-    </p>
-  );
+  return <p className={className}>{formattedAmount}</p>;
 };
 
 export default Price;

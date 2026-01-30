@@ -57,13 +57,11 @@ const { currencySymbol } = config.shopify;
               <span class="text-base md:text-xl font-bold text-text-dark dark:text-darkmode-text-dark">
                 {currencySymbol}
                 {priceRange.minVariantPrice.amount}
-                {compareAtPriceRange?.maxVariantPrice?.currencyCode}
               </span>
 
               {parseFloat(compareAtPriceRange?.maxVariantPrice.amount) > 0 && (
                 <s class="text-text-light dark:text-darkmode-text-light text-xs md:text-base font-medium">
-                  {currencySymbol} {compareAtPriceRange?.maxVariantPrice.amount}{" "}
-                  {compareAtPriceRange?.maxVariantPrice?.currencyCode}
+                  {currencySymbol}{compareAtPriceRange?.maxVariantPrice.amount}
                 </s>
               )}
             </div>

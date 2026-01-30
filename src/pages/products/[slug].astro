@@ -55,20 +55,34 @@ const { currencySymbol } = config.shopify;
 
         {/* left side contents */}
         <div class="col-10 md:col-8 lg:col-5 md:ml-7 py-6 lg:py-0">
+          <a
+            href="/products"
+            class="flex items-center gap-2 text-text-light hover:text-primary transition-colors mb-6 font-medium group text-sm md:text-base"
+          >
+            <svg
+              class="w-5 h-5 transform group-hover:-translate-x-1 transition-transform"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2.5"
+                d="M15 19l-7-7 7-7"></path>
+            </svg>
+            Volver a la Carta
+          </a>
           <h1 class="text-3xl md:h2 mb-2 md:mb-6">{title}</h1>
 
           <div class="flex gap-2 items-center">
             <h4 class="text-text-light dark:text-darkmode-text-light max-md:h2">
-              {currencySymbol}
-              {priceRange?.minVariantPrice.amount}{" "}
-              {priceRange?.minVariantPrice?.currencyCode}
+              {currencySymbol}{priceRange?.minVariantPrice.amount}
             </h4>
             {
               parseFloat(compareAtPriceRange?.maxVariantPrice.amount) > 0 ? (
                 <s class="text-text-light max-md:h3 dark:text-darkmode-text-light">
-                  {currencySymbol}{" "}
-                  {compareAtPriceRange?.maxVariantPrice?.amount}{" "}
-                  {compareAtPriceRange?.maxVariantPrice?.currencyCode}
+                  {currencySymbol}{compareAtPriceRange?.maxVariantPrice?.amount}
                 </s>
               ) : (
                 ""

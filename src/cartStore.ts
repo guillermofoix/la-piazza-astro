@@ -11,11 +11,14 @@ import type { Cart } from "@/lib/shopify/types";
 // Atom to hold the cart state
 export const cart = atom<Cart | null>(null);
 
-// Computed store for total quantity in the cart
-export const totalQuantity = computed(cart, (c) => (c ? c.totalQuantity : 0));
-
 // Atom to manage the layout view state (card or list)
 export const layoutView = atom<"card" | "list">("card");
+
+// Atom to manage cart visibility (global)
+export const isCartOpen = atom<boolean>(false);
+
+// Computed store for total quantity in the cart
+export const totalQuantity = computed(cart, (c) => (c ? c.totalQuantity : 0));
 
 // Function to set a new layout view
 export function setLayoutView(view: "card" | "list") {
@@ -27,12 +30,16 @@ export function getLayoutView() {
   return layoutView.get();
 }
 
+const isServer = typeof window === "undefined";
+
 // Update cart state in the store
 export async function refreshCartState() {
-  const cartId = Cookies.get("cartId");
-  if (cartId) {
-    const currentCart = await getCart(cartId);
-    cart.set(currentCart as any);
+  if (isServer) return; // Don't try to sync on server side
+
+  const cartId = Cookies.get("cartId") || "mock-cart-id";
+  const currentCart = await getCart(cartId);
+  if (currentCart) {
+    cart.set({ ...currentCart } as any);
   }
 }
 
@@ -41,6 +48,7 @@ export async function addItemToCart(selectedVariantId: string) {
   try {
     await addItem(selectedVariantId);
     await refreshCartState();
+    isCartOpen.set(true); // Automatically open cart on success
     return "Added to cart";
   } catch (error: any) {
     throw new Error(error.message || "Failed to add to cart");

@@ -11,6 +11,7 @@ export const GET: APIRoute = async ({ request }) => {
     const { products, pageInfo } = await getProducts({
       sortKey,
       reverse,
+      query: url.searchParams.get("q") || url.searchParams.toString(), // Pass full params as query if no 'q'
       cursor: cursor || undefined,
     });
 

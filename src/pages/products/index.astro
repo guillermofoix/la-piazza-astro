@@ -68,6 +68,7 @@ if (searchValue || brand || minPrice || maxPrice || category || tag) {
             collection: category,
             sortKey,
             reverse,
+            query,
           })
         : await getProducts(query);
   } catch (error) {

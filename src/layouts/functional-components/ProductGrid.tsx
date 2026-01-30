@@ -10,7 +10,7 @@ const ProductGrid = ({
   initialPageInfo,
   sortKey,
   reverse,
-  searchValue
+  searchValue,
 }: {
   initialProducts: Product[];
   initialPageInfo: PageInfo;
@@ -28,7 +28,8 @@ const ProductGrid = ({
   const loaderRef = useRef(null);
 
   const getSortParams = (sortKey: string) => {
-    const sortOption = sorting.find((item) => item.slug === sortKey) || defaultSort;
+    const sortOption =
+      sorting.find((item) => item.slug === sortKey) || defaultSort;
     return { sortKey: sortOption.sortKey, reverse: sortOption.reverse };
   };
 
@@ -38,10 +39,11 @@ const ProductGrid = ({
     setLoading(true);
     try {
       const response = await fetch(
-        `/api/products.json?cursor=${pageInfo.endCursor || ""}&sortKey=${currentSortKey}&reverse=${currentReverse}`
+        `/api/products.json?cursor=${pageInfo.endCursor || ""}&sortKey=${currentSortKey}&reverse=${currentReverse}`,
       );
       if (!response.ok) throw new Error("Failed to fetch");
-      const { products: newProducts, pageInfo: newPageInfo } = await response.json();
+      const { products: newProducts, pageInfo: newPageInfo } =
+        await response.json();
 
       setProducts((prevProducts) => [...prevProducts, ...newProducts]);
       setPageInfo(newPageInfo);
@@ -57,7 +59,8 @@ const ProductGrid = ({
     const params = new URLSearchParams(window.location.search);
     const newSortKey = params.get("sortKey") || sortKey;
 
-    const { sortKey: mappedSortKey, reverse: mappedReverse } = getSortParams(newSortKey);
+    const { sortKey: mappedSortKey, reverse: mappedReverse } =
+      getSortParams(newSortKey);
 
     // Update only if URL params differ from current state
     if (mappedSortKey !== currentSortKey || mappedReverse !== currentReverse) {
@@ -90,7 +93,7 @@ const ProductGrid = ({
             loadMoreProducts();
           }
         },
-        { threshold: 1.0 }
+        { threshold: 1.0 },
       );
 
       if (loaderRef.current) {
@@ -114,7 +117,9 @@ const ProductGrid = ({
           {products.length === 0
             ? "There are no products that match "
             : `Showing ${products.length} ${resultsText} for `}
-          <span className="font-bold text-dark dark:text-darkmode-text-dark">&quot;{searchValue}&quot;</span>
+          <span className="font-bold text-dark dark:text-darkmode-text-dark">
+            &quot;{searchValue}&quot;
+          </span>
         </p>
       ) : null}
 
@@ -135,19 +140,19 @@ const ProductGrid = ({
       )}
 
       <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4">
-
         {products.map((product, index) => {
           const defaultVariantId =
             product?.variants.length > 0 ? product?.variants[0].id : undefined;
           return (
             <div
               key={index}
-              className="text-center group relative"
+              className="text-center group relative p-4 rounded-2xl transition-all duration-500 hover:bg-zinc-50 dark:hover:bg-zinc-900/50 hover:shadow-2xl hover:-translate-y-2"
             >
               <div className="md:relative overflow-hidden">
                 <img
                   src={
-                    product.featuredImage?.url || "/images/product-placeholder.jpg"
+                    product.featuredImage?.url ||
+                    "/images/product-placeholder.jpg"
                   }
                   width={312}
                   height={269}
@@ -176,20 +181,15 @@ const ProductGrid = ({
                 </h2>
                 <div className="flex flex-wrap justify-center items-center gap-x-2 mt-2 md:mt-4">
                   <span className="text-base md:text-xl font-bold text-text-dark dark:text-darkmode-text-dark">
-                    {currencySymbol}{" "}
-                    {product?.priceRange?.minVariantPrice?.amount}{" "}
-                    {product?.priceRange?.minVariantPrice?.currencyCode}
+                    {currencySymbol}
+                    {product?.priceRange?.minVariantPrice?.amount}
                   </span>
                   {parseFloat(
                     product?.compareAtPriceRange?.maxVariantPrice?.amount,
                   ) > 0 ? (
                     <s className="text-text-light dark:text-darkmode-text-light text-xs md:text-base font-medium">
-                      {currencySymbol}{" "}
-                      {product?.compareAtPriceRange?.maxVariantPrice?.amount}{" "}
-                      {
-                        product?.compareAtPriceRange?.maxVariantPrice
-                          ?.currencyCode
-                      }
+                      {currencySymbol}
+                      {product?.compareAtPriceRange?.maxVariantPrice?.amount}
                     </s>
                   ) : (
                     ""
@@ -197,13 +197,20 @@ const ProductGrid = ({
                 </div>
               </div>
             </div>
-          )
+          );
         })}
       </div>
 
       {pageInfo?.hasNextPage && (
-        <div ref={loaderRef} className="text-center pt-10 pb-4 flex justify-center">
-          {loading ? <BiLoaderAlt className={`animate-spin`} size={30} /> : "Scroll for more"}
+        <div
+          ref={loaderRef}
+          className="text-center pt-10 pb-4 flex justify-center"
+        >
+          {loading ? (
+            <BiLoaderAlt className={`animate-spin`} size={30} />
+          ) : (
+            "Scroll for more"
+          )}
         </div>
       )}
     </div>

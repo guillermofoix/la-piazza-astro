@@ -74,14 +74,14 @@ const RangeSlider = ({
         const newPercent = (initialMinVal / maxAmount) * 100 + dPercent;
         const newValue = Math.max(
           0,
-          Math.min(maxValue - 1, Math.round((newPercent * maxAmount) / 100))
+          Math.min(maxValue - 1, Math.round((newPercent * maxAmount) / 100)),
         );
         setMinValue(newValue);
       } else {
         const newPercent = (initialMaxVal / maxAmount) * 100 + dPercent;
         const newValue = Math.max(
           minValue + 1,
-          Math.min(maxAmount, Math.round((newPercent * maxAmount) / 100))
+          Math.min(maxAmount, Math.round((newPercent * maxAmount) / 100)),
         );
         setMaxValue(newValue);
       }
@@ -106,9 +106,8 @@ const RangeSlider = ({
   }
 
   const showSubmitButton =
-    (minValue !== (getMinPrice ? parseInt(getMinPrice) : 0) ||
-      maxValue !== (getMaxPrice ? parseInt(getMaxPrice) : maxAmount)) &&
-    (minValue !== 0 || maxValue !== maxAmount);
+    minValue !== (getMinPrice ? parseInt(getMinPrice) : 0) ||
+    maxValue !== (getMaxPrice ? parseInt(getMaxPrice) : maxAmount);
 
   return (
     <div className="range-slider-container">
