@@ -41,7 +41,7 @@ Si refrescas la página, tus pizzas siguen en el carrito. Esto es porque el arch
 
 ### C. La Interfaz: React + Astro
 
-Astro es estático (no tiene "vida" por defecto para que la web vuele). Para el carrito necesitamos "vida" (interactividad).
+Astro es estático (no tiene "vida" por defecto para que la web vole). Para el carrito necesitamos "vida" (interactividad).
 
 - Por eso usamos **React**.
 - Al llamar al componente en un archivo `.astro`, verás que usamos `client:load`. Esto le dice a Astro: _"Oye, carga el motor de React para este trozo, porque tiene que moverse"_.
@@ -71,14 +71,31 @@ Si quieres que tu proyecto anterior tenga esta misma potencia, estos son los pas
 
 ---
 
-## 🧪 5. Práctica: Añadir una Insignia (Badge) de Shadcn UI
+## 🌐 5. Origen del proyecto: Astro + Shopify
+
+Este proyecto se basa en el template profesional **Storeplate** de [Zeon Studio](https://zeon.studio/). El repositorio original es: [https://github.com/zeon-studio/storeplate](https://github.com/zeon-studio/storeplate).
+
+### ¿Cómo funciona en el mundo real (sin adaptaciones)?
+
+Nosotros hemos "trucado" el proyecto para que funcione sin conexión a internet usando datos simulados (Mock Data). Sin embargo, este template está diseñado para conectarse directamente a **Shopify**.
+
+Si tú tuvieras una tienda en Shopify:
+
+1.  **Conexión Directa:** No tendrías que programar los productos. Solo tendrías que poner tu `Domain` y tu `Access Token` en el archivo `.env`.
+2.  **Sincronización Total:** Si cambias el precio de una pizza en el panel de control de Shopify, la web de Astro se actualizaría automáticamente sin tocar una sola línea de código.
+3.  **Pagos Reales:** El carrito enviaría al cliente directamente a la pasarela de pago segura de Shopify.
+
+Esto es lo que se llama **Headless Commerce**: Usar una plataforma potente para los datos (Shopify) y una tecnología ultra rápida para el diseño (Astro).
+
+---
+
+## 🧪 6. Práctica: Añadir una Insignia (Badge) de Shadcn UI
 
 Vamos a usar **Shadcn UI**. El objetivo es añadir una etiqueta de "OFERTA" encima del nombre de nuestras pizzas.
 
 ### 🔍 ¿Por qué no usamos la etiqueta `<Badge>` de la web?
 
-Si vas a la web de Shadcn ([Badge Docs](https://ui.shadcn.com/docs/components/badge)) verás que usan `<Badge>`. Si lo copias tal cual, fallará porque no hemos creado el archivo `Badge.tsx`.
-En Shadcn, **tú eres el dueño del código**, así que hoy vamos a usar el atajo profesional: **copiar las clases de estilo de Tailwind**.
+Si vas a la web de Shadcn ([Badge Docs](https://ui.shadcn.com/docs/components/badge)) verás que usan `<Badge>`. En Shadcn, **tú eres el dueño del código**, así que hoy vamos a usar el atajo profesional: **copiar las clases de estilo de Tailwind**.
 
 ### 🎨 Elige tu Estilo (Copia uno de estos códigos)
 
@@ -100,7 +117,7 @@ En Shadcn, **tú eres el dueño del código**, así que hoy vamos a usar el ataj
 
 ---
 
-## 👨‍🍳 6. Instrucciones de instalación en la web
+## 👨‍🍳 7. Instrucciones de instalación en la web
 
 1. Abre: `src/layouts/functional-components/ProductGrid.tsx`.
 2. Ve a la **línea 179**: donde pone `{product?.title}`.
