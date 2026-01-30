@@ -183,10 +183,7 @@ function syncCart() {
 function applyFilters(products: Product[], queryObj: any): Product[] {
   let filtered = [...products];
   const query = typeof queryObj === 'string' ? { query: queryObj } : (queryObj || {});
-  
-  // Ensure we have a string for the query part
-  const rawQuery = query.query;
-  const qStr = (typeof rawQuery === 'string' ? rawQuery : "").trim();
+  const qStr = (typeof query.query === 'string' ? query.query : "").trim();
   
   // 1. PRICE
   const min = qStr.match(/variants\.price:>=([\d.]+)/)?.[1];
@@ -198,35 +195,29 @@ function applyFilters(products: Product[], queryObj: any): Product[] {
     filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
   }
 
-  // 2. VENDOR
-  const vendorMatch = qStr.match(/vendor:"([^"]+)"/) || qStr.match(/vendor:([^ ]+)/);
-  if (vendorMatch) {
-    const vTerm = vendorMatch[1].toLowerCase();
-    filtered = filtered.filter(p => p.vendor.toLowerCase().includes(vTerm) || (p as any).vendor?.toLowerCase().includes(vTerm));
+  // 2. VENDORS (Support multiple: vendor:"A" OR vendor:"B")
+  const vendorMatches = [...qStr.matchAll(/vendor:"([^"]+)"/g)].map(m => m[1].toLowerCase());
+  if (vendorMatches.length > 0) {
+    filtered = filtered.filter(p => vendorMatches.includes(p.vendor.toLowerCase()));
   }
 
-  // 3. TEXT SEARCH (only if NOT a system filter)
-  const isSystemQuery = qStr.includes('vendor:') || qStr.includes('variants.price:') || qStr.includes('tag:');
-  let cleanText = qStr;
-  
-  if (isSystemQuery) {
-    const qMatch = qStr.match(/q:"([^"]+)"/);
-    if (qMatch) {
-      cleanText = qMatch[1];
-    } else {
-      cleanText = qStr.split(' ').filter(word => word && !word.includes(':')).join(' ');
-    }
+  // 3. TAGS (Support multiple: tag:A OR tag:B)
+  const tagMatches = [...qStr.matchAll(/tag:([^ )"]+)/g)].map(m => m[1].toLowerCase());
+  if (tagMatches.length > 0) {
+    filtered = filtered.filter(p => p.tags.some(t => tagMatches.includes(t.toLowerCase())));
   }
 
-  const term = cleanText.trim().toLowerCase();
-  if (term && term.length > 0) {
+  // 4. TEXT SEARCH
+  const qMatch = qStr.match(/q:"([^"]+)"/);
+  const searchTerm = qMatch ? qMatch[1].toLowerCase().trim() : "";
+  if (searchTerm) {
     filtered = filtered.filter(p => 
-      p.title.toLowerCase().includes(term) || 
-      p.description.toLowerCase().includes(term)
+      p.title.toLowerCase().includes(searchTerm) || 
+      p.description.toLowerCase().includes(searchTerm)
     );
   }
 
-  // 4. SORTING
+  // 5. SORTING
   const sortKey = query?.sortKey;
   const reverse = String(query?.reverse) === 'true';
 

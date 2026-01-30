@@ -17,14 +17,14 @@ import CallToAction from "@/partials/CallToAction.astro";
 const searchParams = Astro.url.searchParams;
 const searchParamsObject = Object.fromEntries(searchParams.entries());
 
-const sort = searchParamsObject.sort || "";
-const searchValue = searchParamsObject.q || "";
-const minPrice = searchParamsObject.minPrice || "";
-const maxPrice = searchParamsObject.maxPrice || "";
-const brand = searchParamsObject.b || "";
-const category = searchParamsObject.c || "all";
-const tag = searchParamsObject.t || "";
-const cursor = searchParamsObject.cursor || null;
+const sort = searchParams.get("sort") || "";
+const searchValue = searchParams.get("q") || "";
+const minPrice = searchParams.get("minPrice") || "";
+const maxPrice = searchParams.get("maxPrice") || "";
+const brands = searchParams.getAll("b");
+const category = searchParams.get("c") || "all";
+const tagsParam = searchParams.getAll("t");
+const cursor = searchParams.get("cursor") || null;
 
 const { sortKey, reverse } =
   sorting.find((item) => item.slug === sort) || defaultSort;
@@ -33,7 +33,7 @@ let productsData: any;
 let vendorsWithCounts: { vendor: string; productCount: number }[] = [];
 let categoriesWithCounts: { category: string; productCount: number }[] = [];
 
-if (searchValue || brand || minPrice || maxPrice || category || tag) {
+if (searchValue || brands.length > 0 || minPrice || maxPrice || category || tagsParam.length > 0) {
   let queryString = "";
 
   if (minPrice) {
@@ -44,17 +44,17 @@ if (searchValue || brand || minPrice || maxPrice || category || tag) {
   }
 
   if (searchValue) {
-    queryString += ` ${searchValue}`;
+    queryString += ` q:"${searchValue}"`;
   }
 
-  if (brand) {
-    Array.isArray(brand)
-      ? (queryString += `${brand.map((b) => `(vendor:${b})`).join(" OR ")}`)
-      : (queryString += `vendor:"${brand}"`);
+  if (brands.length > 0) {
+    const brandQuery = brands.map((b) => `vendor:"${b}"`).join(" OR ");
+    queryString += ` (${brandQuery})`;
   }
 
-  if (tag) {
-    queryString += ` ${tag}`;
+  if (tagsParam.length > 0) {
+    const tagQuery = tagsParam.map((t) => `tag:${t}`).join(" OR ");
+    queryString += ` (${tagQuery})`;
   }
 
   const query = {
