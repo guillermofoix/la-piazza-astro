@@ -182,16 +182,21 @@ function syncCart() {
 
 function applyFilters(products: Product[], queryObj: any): Product[] {
   let filtered = [...products];
-  const query = typeof queryObj === 'string' ? { query: queryObj } : queryObj;
-  const qStr = (query?.query || "").trim();
+  const query = typeof queryObj === 'string' ? { query: queryObj } : (queryObj || {});
   
-  if (!qStr) return filtered;
-
+  // Ensure we have a string for the query part
+  const rawQuery = query.query;
+  const qStr = (typeof rawQuery === 'string' ? rawQuery : "").trim();
+  
   // 1. PRICE
   const min = qStr.match(/variants\.price:>=([\d.]+)/)?.[1];
   const max = qStr.match(/variants\.price:<=([\d.]+)/)?.[1];
-  if (min) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
-  if (max) filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
+  if (min && !isNaN(parseFloat(min))) {
+    filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) >= parseFloat(min));
+  }
+  if (max && !isNaN(parseFloat(max))) {
+    filtered = filtered.filter(p => parseFloat(p.priceRange.minVariantPrice.amount) <= parseFloat(max));
+  }
 
   // 2. VENDOR
   const vendorMatch = qStr.match(/vendor:"([^"]+)"/) || qStr.match(/vendor:([^ ]+)/);
@@ -205,9 +210,12 @@ function applyFilters(products: Product[], queryObj: any): Product[] {
   let cleanText = qStr;
   
   if (isSystemQuery) {
-    // Extract q:"..." if present, otherwise ignore system parts
     const qMatch = qStr.match(/q:"([^"]+)"/);
-    cleanText = qMatch ? qMatch[1] : qStr.split(' ').filter(word => !word.includes(':')).join(' ');
+    if (qMatch) {
+      cleanText = qMatch[1];
+    } else {
+      cleanText = qStr.split(' ').filter(word => word && !word.includes(':')).join(' ');
+    }
   }
 
   const term = cleanText.trim().toLowerCase();
@@ -220,7 +228,7 @@ function applyFilters(products: Product[], queryObj: any): Product[] {
 
   // 4. SORTING
   const sortKey = query?.sortKey;
-  const reverse = query?.reverse === true || query?.reverse === 'true';
+  const reverse = String(query?.reverse) === 'true';
 
   if (sortKey === 'PRICE') {
     filtered.sort((a, b) => {
@@ -307,9 +315,16 @@ export async function getCollectionProducts(args: any) {
     products = products.filter(p => (p as any).category.toLowerCase() === collection.toLowerCase());
   }
 
-  // Create combined query object for applyFilters
+  // Extract query safely
+  let queryText = "";
+  if (typeof args?.query === 'string') {
+    queryText = args.query;
+  } else if (typeof args?.query?.query === 'string') {
+    queryText = args.query.query;
+  }
+
   const queryObj = {
-    query: args?.query?.query || args?.query || "",
+    query: queryText,
     sortKey: args?.sortKey,
     reverse: args?.reverse
   };
@@ -323,7 +338,11 @@ export async function getCollectionProducts(args: any) {
   return { pageInfo: { hasNextPage: false, hasPreviousPage: false, endCursor: '' }, products };
 }
 
-export async function getProducts(queryObj: any = {}) {
+export async function getProducts(arg: any = {}) {
+  // If arg is a string, it's the query. If it's an object, it might contain query: string
+  const queryText = typeof arg === 'string' ? arg : (arg?.query || "");
+  const queryObj = typeof arg === 'string' ? { query: arg } : arg;
+  
   let products = applyFilters(MOCK_PRODUCTS, queryObj);
   return { pageInfo: { hasNextPage: false, hasPreviousPage: false, endCursor: '' }, products };
 }
